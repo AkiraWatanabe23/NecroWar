@@ -44,20 +44,9 @@ public enum BGMType
     None,
     Title,
     InGame,
-    P1Win,
-    P2Win,
-    Draw
 }
 
 public enum SEType
 {
     None,
-    P1Attack,
-    P2Attack,
-    P1Damaged,
-    P2Damaged,
-    UIClick,
-    Wind,
-    P1Damaged2,
-    UIClick2,
 }
