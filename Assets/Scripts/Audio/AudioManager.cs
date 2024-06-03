@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Constants;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary> ゲーム内のサウンド管理クラス </summary>
@@ -64,6 +65,7 @@ public class AudioManager
             index++;
             if (clip.BGMType == bgm) { break; }
         }
+        if (index < 0) { Consts.Log($"There is no AudioClip corresponding to {bgm}."); return; }
 
         _bgmSource.Stop();
 
@@ -82,6 +84,7 @@ public class AudioManager
             index++;
             if (clip.SEType == se) { break; }
         }
+        if (index < 0) { Consts.Log($"There is no AudioClip corresponding to {se}."); return; }
         //再生するSEを追加
         _seQueue.Enqueue(_soundHolder.SEClips[index].SEClip);
 
