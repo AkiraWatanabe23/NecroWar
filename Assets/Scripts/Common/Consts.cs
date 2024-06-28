@@ -19,8 +19,10 @@ namespace Constants
 
         /// <summary> 指定したシーンのシーン名を取得する </summary>
         public static string GetSceneNameString(SceneName scene) => Scenes[scene];
+    }
 
-        #region Console Logs
+    public static class EditorDebug
+    {
         public static void Log(object message)
         {
 #if UNITY_EDITOR
@@ -41,7 +43,6 @@ namespace Constants
             Debug.LogError(message);
 #endif
         }
-        #endregion
     }
 }
 
