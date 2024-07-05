@@ -3,6 +3,13 @@ using UnityEngine;
 
 namespace Constants
 {
+    public enum SceneName
+    {
+        Title,
+        InGame,
+        Result
+    }
+
     /// <summary> 定数管理ファイル </summary>
     public static class Consts
     {
@@ -16,12 +23,9 @@ namespace Constants
             { SceneName.InGame, "GameScene" },
             { SceneName.Result, "ResultScene" }
         };
-
-        /// <summary> 指定したシーンのシーン名を取得する </summary>
-        public static string GetSceneNameString(SceneName scene) => Scenes[scene];
     }
 
-    public static class EditorDebug
+    public static class ConsoleLogs
     {
         public static void Log(object message)
         {
@@ -44,11 +48,4 @@ namespace Constants
 #endif
         }
     }
-}
-
-public enum SceneName
-{
-    Title,
-    InGame,
-    Result
 }
