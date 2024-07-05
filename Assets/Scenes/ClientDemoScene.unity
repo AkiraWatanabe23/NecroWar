@@ -3829,6 +3829,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1342217986}
     - target: {fileID: 2274403086176295069, guid: a5526fdd6e066874392b602f4c1cdbd1, type: 3}
+      propertyPath: _saveIDClosedToggle
+      value: 
+      objectReference: {fileID: 1342217986}
+    - target: {fileID: 2274403086176295069, guid: a5526fdd6e066874392b602f4c1cdbd1, type: 3}
       propertyPath: _resetDataInitializedToggle
       value: 
       objectReference: {fileID: 728002665}

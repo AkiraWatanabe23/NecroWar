@@ -1,15 +1,15 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
+public enum SceneName
+{
+    Title,
+    InGame,
+    Result
+}
+
 namespace Constants
 {
-    public enum SceneName
-    {
-        Title,
-        InGame,
-        Result
-    }
-
     /// <summary> 定数管理ファイル </summary>
     public static class Consts
     {

@@ -9,16 +9,38 @@ public class UserDataHolder : MonoBehaviour
     [SerializeReference]
     private IDataBase[] _userDatas = default;
 
-    [Header("For Debug")]
-    [Tooltip("接続開始時にIDを破棄するか")]
+    [Header("For EditorDebug")]
+    [Tooltip("接続開始時に保存しているIDがあった場合破棄するか")]
+    [SerializeField]
+    private bool _isResetDataInitialized = false;
+    [Tooltip("実行終了時にIDを保存するか")]
+    [SerializeField]
+    private bool _isSaveIDOnClosed = false;
+
+    [Header("For BuildDebug")]
+    [Tooltip("接続開始時に保存しているIDがあった場合破棄するか")]
     [SerializeField]
     private Toggle _resetDataInitializedToggle = default;
-    [Tooltip("実行終了時にデータを保存するか")]
+    [Tooltip("実行終了時にIDを保存するか")]
     [SerializeField]
-    private Toggle _saveDataToggle = default;
+    private Toggle _saveIDClosedToggle = default;
 
-    protected bool IsResetDataOnInitialized => _resetDataInitializedToggle.isOn;
-    protected bool IsSaveData => _saveDataToggle.isOn;
+    protected bool IsResetDataOnInitialized
+    {
+        get
+        {
+            if (_resetDataInitializedToggle != null) { return _resetDataInitializedToggle.isOn; }
+            else { return _isResetDataInitialized; }
+        }
+    }
+    protected bool IsSaveData
+    {
+        get
+        {
+            if (_saveIDClosedToggle != null) { return _saveIDClosedToggle.isOn; }
+            else { return _isSaveIDOnClosed; }
+        }
+    }
 
     public IDataBase[] UserDatas => _userDatas;
     public string ID
