@@ -37,3 +37,4 @@
 5, ConnectorView.cs
 　・リクエストの結果等を画面に表示するためのUIが宣言されているクラス
 　・プロジェクトごとに表示する内容が異なることが想定されるため、必要であれば編集する
+　・各UIの処理は基本的に「class ServerConnector → void RegisterViewActions()」内に記述する
