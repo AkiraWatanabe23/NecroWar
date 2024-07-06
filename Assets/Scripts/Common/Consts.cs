@@ -4,8 +4,8 @@ using UnityEngine;
 public enum SceneName
 {
     Title,
+    Home,
     InGame,
-    Result
 }
 
 namespace Constants
@@ -20,8 +20,8 @@ namespace Constants
         public static readonly Dictionary<SceneName, string> Scenes = new()
         {
             { SceneName.Title, "TitleScene" },
-            { SceneName.InGame, "GameScene" },
-            { SceneName.Result, "ResultScene" }
+            { SceneName.Home, "HomeScene" },
+            { SceneName.InGame, "InGameScene" },
         };
     }
 
