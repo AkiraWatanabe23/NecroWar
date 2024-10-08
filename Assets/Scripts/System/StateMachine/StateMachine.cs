@@ -1,17 +1,22 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace StateMachine
 {
     public enum StateType
     {
         None,
+        GameStart,
+        GameFinish
     }
 
     public enum TransitionTrigger
     {
         None,
+        InputEscape
     }
 
+    /// <summary> 各ステートで実行する関数 </summary>
     public abstract class State<T>
     {
         public abstract void OnEnter();
@@ -19,10 +24,21 @@ namespace StateMachine
         public abstract void OnUpdate(float deltaTime);
     }
 
+    /// <summary> ステートの遷移データ </summary>
     public class StateTransition
     {
+        /// <summary> 遷移先 </summary>
         public StateType To { get; private set; }
+        /// <summary> 遷移条件 </summary>
         public TransitionTrigger Trigger { get; private set; }
+        public Func<bool> TransitionTrigger { get; private set; }
+
+        public StateTransition(StateType to, TransitionTrigger trigger, Func<bool> transitionTrigger)
+        {
+            To = to;
+            Trigger = trigger;
+            TransitionTrigger = transitionTrigger;
+        }
     }
 
     public class StateMachine<T>
@@ -42,12 +58,19 @@ namespace StateMachine
             OnChangeState(initialState);
         }
 
+        #region Register
+        /// <summary> ステートの登録 </summary>
+        /// <param name="state"> ステート名 </param>
+        /// <param name="instance"> 対象ステートのインスタンス </param>
         public void AddStateData(StateType state, State<T> instance)
         {
             if (_stateData.ContainsKey(state)) { _stateData[state] = instance; }
             else { _stateData.Add(state, instance); }
         }
 
+        /// <summary> 遷移データの登録 </summary>
+        /// <param name="from"> 遷移元 </param>
+        /// <param name="to"> 遷移先 </param>
         public void RegisterTransition(StateType from, params StateTransition[] to)
         {
             if (!_transitionData.ContainsKey(from)) { _transitionData.Add(from, new List<StateTransition>()); }
@@ -56,16 +79,35 @@ namespace StateMachine
             {
                 if (_transitionData[from].Find(transitionData => transitionData.To == transition.To) != null)
                 {
-                    //遷移情報の重複が見つかった場合
+                    //遷移情報の重複が見つかった場合は無視
                     continue;
                 }
                 _transitionData[from].Add(transition);
             }
         }
+        #endregion
 
-        public void ExecuteTrigger(TransitionTrigger trigger)
+        #region Execute
+        /// <summary> 現在のステートの実行部 </summary>
+        public void OnUpdate(float deltaTime)
+        {
+            _currentState.OnUpdate(deltaTime);
+            //遷移条件を満たすものがあれば遷移する
+            foreach (var transition in _transitionData.Values)
+            {
+                foreach (var data in transition)
+                {
+                    if (data.TransitionTrigger()) { ExecuteTrigger(data.Trigger); }
+                }
+            }
+        }
+
+        /// <summary> 遷移条件の判定 </summary>
+        /// <param name="trigger"> 遷移条件 </param>
+        private void ExecuteTrigger(TransitionTrigger trigger)
         {
             var transitionData = _transitionData[_currentStateType];
+            //現在のステートに登録している遷移データ内で、あてはまるものがあれば遷移する
             foreach (var transition in transitionData)
             {
                 if (transition.Trigger == trigger)
@@ -76,7 +118,9 @@ namespace StateMachine
             }
         }
 
-        public void OnChangeState(StateType to)
+        /// <summary> ステートの遷移 </summary>
+        /// <param name="to"> 遷移先 </param>
+        private void OnChangeState(StateType to)
         {
             _currentState?.OnExit();
 
@@ -88,14 +132,7 @@ namespace StateMachine
         }
 
         /// <summary> 指定されたStateが登録されているか </summary>
-        private bool GetState(StateType state)
-        {
-            return _stateData.ContainsKey(state);
-        }
-
-        public void OnUpdate(float deltaTime)
-        {
-            _currentState.OnUpdate(deltaTime);
-        }
+        private bool GetState(StateType state) => _stateData.ContainsKey(state);
+        #endregion
     }
 }

@@ -29,6 +29,8 @@ namespace Network
         [field: SerializeField]
         public Button GetScoreButton { get; private set; }
         [field: SerializeField]
+        public Button GetRankingButton { get; private set; }
+        [field: SerializeField]
         public Button CloseButton { get; private set; }
 
         public string Name => _nameInput.text;

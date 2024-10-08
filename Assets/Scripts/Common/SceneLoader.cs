@@ -8,9 +8,4 @@ public class SceneLoader
 
     /// <summary> シーン遷移 </summary>
     public static void LoadToScene(SceneName scene) => SceneManager.LoadScene(Consts.Scenes[scene]);
-
-    //public void Load()
-    //{
-    //    SceneManager.LoadScene("TitleScene");
-    //}
 }

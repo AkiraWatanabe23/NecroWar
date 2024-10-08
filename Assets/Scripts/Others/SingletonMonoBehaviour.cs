@@ -4,9 +4,9 @@ using UnityEngine;
 /// <summary> SingletonMonoBehaviourの基底クラス </summary>
 public abstract class SingletonMonoBehaviour<T> : MonoBehaviour where T : MonoBehaviour
 {
-    protected new abstract bool DontDestroyOnLoad { get; }
-
     private static T _instance = default;
+
+    protected new abstract bool DontDestroyOnLoad { get; }
 
     public static T Instance
     {
