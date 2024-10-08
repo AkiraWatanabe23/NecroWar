@@ -12,6 +12,11 @@ public class PieceData : ScriptableObject
 public enum PieceType
 {
     None = 0,
+    Knight,
+    Bishop,
+    Rook,
+    Queen,
+    King,
 }
 
 public enum CharacterType

@@ -33,7 +33,7 @@ public class UserDataHolder : MonoBehaviour
             else { return _isResetDataInitialized; }
         }
     }
-    protected bool IsSaveData
+    protected bool IsSaveDataOnClosed
     {
         get
         {
@@ -43,14 +43,7 @@ public class UserDataHolder : MonoBehaviour
     }
 
     public IDataBase[] UserDatas => _userDatas;
-    public string ID
-    {
-        get
-        {
-            if (IsHoldID()) { return PlayerPrefs.GetString("UserID"); }
-            else { return ""; }
-        }
-    }
+    public string ID => PlayerPrefs.GetString("UserID");
 
     public void Initalize()
     {
@@ -58,12 +51,30 @@ public class UserDataHolder : MonoBehaviour
     }
 
     #region Data Update
-    public void OnUpdateDataInfo(AbstractData data)
+    public void OnUpdateDataInfo(string targetClass, string responseData)
     {
-        for (int i = 0; i < _userDatas.Length; i++)
+        var splitData = responseData.Split(',');
+        for (int i = 0; i < splitData.Length; i++)
         {
-            if (_userDatas[i].GetType() != data.GetType()) { continue; }
-            _userDatas[i] = data;
+            var paramTemplate = splitData[i].Split(':');
+            var paramName = paramTemplate[0];
+            var parameter = paramTemplate[1];
+
+            for (int j = 0; j < _userDatas.Length; j++)
+            {
+                var classType = _userDatas[j].GetType();
+                if (classType.ToString() != targetClass) { continue; }
+
+                var fieldInfo = classType.GetField(paramName, BindingFlags.Public | BindingFlags.Instance);
+                if (int.TryParse(parameter, out int value) && fieldInfo.FieldType == typeof(int))
+                {
+                    fieldInfo?.SetValue(_userDatas[j], value);
+                }
+                else if (fieldInfo.FieldType == typeof(string))
+                {
+                    fieldInfo?.SetValue(_userDatas[j], parameter);
+                }
+            }
         }
     }
 
@@ -78,7 +89,6 @@ public class UserDataHolder : MonoBehaviour
     }
 
     /// <summary> Neme という変数があるクラスをすべて検索し、更新をかける </summary>
-    /// <param name="name">  </param>
     public void OnUpdateName(string name)
     {
         foreach (var userData in UserDatas)
@@ -97,7 +107,6 @@ public class UserDataHolder : MonoBehaviour
         {
             var dataElement = (AbstractData)userData;
             var type = dataElement.GetType();
-            Debug.Log(type.ToString());
 
             var scoreField = type.GetField("Score", BindingFlags.Public | BindingFlags.Instance);
             scoreField?.SetValue(userData, score);
@@ -114,12 +123,12 @@ public class UserDataHolder : MonoBehaviour
         return isHoldID;
     }
 
-    /// <summary> データの削除を行うか </summary>
+    /// <summary> データの保存を行うか </summary>
     public bool IsDataSaveOnClosed()
     {
-        if (PlayerPrefs.HasKey("UserID") && IsSaveData) { PlayerPrefs.Save(); }
+        if (PlayerPrefs.HasKey("UserID") && IsSaveDataOnClosed) { PlayerPrefs.Save(); }
 
-        return IsSaveData;
+        return IsSaveDataOnClosed;
     }
 
     public void DeleteID() => PlayerPrefs.DeleteKey("UserID");

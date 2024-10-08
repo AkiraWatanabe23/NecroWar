@@ -2,12 +2,7 @@
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
-
-#if UNITY_EDITOR
 using Debug = UnityEngine.Debug;
-#else
-using Debug = Constants.ConsoleLogs;
-#endif
 
 /// <summary> サーバーへの接続に必要なデータの取得、クライアントへの受け渡しを行うクラス </summary>
 public class BootstrapServer
@@ -36,7 +31,7 @@ public class BootstrapServer
 
             if (IPAddress.TryParse(response, out var ipAddress)) { _serverIPAddress = ipAddress.ToString(); }
         }
-        else { Debug.LogError("TimeOut"); }
+        else { Debug.Log($"TimeOut : ローカルリクエストに失敗しました"); }
 
         udpClient.Close();
 

@@ -52,3 +52,4 @@ MonoBehaviour:
     _rerunCount: 1
     _executionTime: 1
     _runCount: 0
+  _targetClassName: Data.Demo.DemoData

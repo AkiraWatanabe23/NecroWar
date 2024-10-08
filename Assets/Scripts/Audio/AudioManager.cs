@@ -12,8 +12,11 @@ using Debug = Constants.EditorDebug;
 /// <summary> ゲーム内のサウンド管理クラス </summary>
 public class AudioManager
 {
+    /// <summary> Audio再生するClipを統括する親オブジェクト </summary>
     private static GameObject _audioObject = default;
+    /// <summary> BGM用のSource（基本的に1シーン当たり1BGMなので単一のインスタンス） </summary>
     private static AudioSource _bgmSource = default;
+    /// <summary> SE用のSource（SEはたくさん流れるのでList） </summary>
     private static List<AudioSource> _seSources = default;
 
     private static AudioHolder _soundHolder = default;
@@ -49,9 +52,10 @@ public class AudioManager
         _seSources = new() { se.AddComponent<AudioSource>() };
         se.transform.parent = _audioObject.transform;
 
+        //Editor時にしか対応していないため、修正
         _soundHolder = Resources.Load<AudioHolder>("AudioHolder");
 
-        //音量設定
+        //初期音量設定（データ引き継ぎ等に対応する必要有）
         _bgmSource.volume = 1f;
         _seSources[0].volume = 1f;
 
@@ -131,6 +135,7 @@ public class AudioManager
         return _soundHolder.BGMClips[index].BGMClip;
     }
 
+    /// <summary> BGMの再生終了待機 </summary>
     public IEnumerator BGMPlayingWait()
     {
         yield return new WaitUntil(() => !_bgmSource.isPlaying);
@@ -141,6 +146,7 @@ public class AudioManager
         while (_bgmSource.isPlaying) { await Task.Yield(); }
     }
 
+    /// <summary> SEの再生終了待機 </summary>
     public IEnumerator SEPlayingWait()
     {
         foreach (var source in _seSources)

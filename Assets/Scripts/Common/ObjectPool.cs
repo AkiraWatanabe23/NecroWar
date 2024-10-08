@@ -34,7 +34,7 @@ public class ObjectPool
             return go;
         }
 
-        //Dictionaryに登録されてなかった場合新規に作成し、Dictionaryに登録する
+        //Dictionaryに登録されてなかった場合新規に生成し、Dictionaryに登録する
         var createObj = Object.Instantiate(prefab);
         var poolList = new List<GameObject>() { createObj };
         _poolDict.Add(hash, poolList);

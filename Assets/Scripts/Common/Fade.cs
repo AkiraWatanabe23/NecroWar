@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary> フェードを管理するクラス </summary>
-public class Fade : MonoBehaviour
+public class Fade : SingletonMonoBehaviour<Fade>
 {
     [Tooltip("フェードさせるUI")]
     [SerializeField]
@@ -13,12 +13,7 @@ public class Fade : MonoBehaviour
     [SerializeField]
     private float _fadeTime = 1f;
 
-    public static Fade Instance { get; private set; }
-
-    private void Awake()
-    {
-        if (Instance == null) { Instance = this; }
-    }
+    protected override bool DontDestroyOnLoad => true;
 
     /// <summary> フェードイン開始 </summary>
     public void StartFadeIn(params Action[] onCompleteFadeIn) => StartCoroutine(FadeIn(onCompleteFadeIn));
@@ -30,7 +25,7 @@ public class Fade : MonoBehaviour
     {
         _fadePanel.gameObject.SetActive(true);
 
-        //α値(透明度)を 1 -> 0 にする(少しずつ明るくする)
+        //α値(透明度)を 1 → 0 にする(少しずつ明るくする)
         float alpha = 1f;
         Color color = _fadePanel.color;
 
@@ -57,7 +52,7 @@ public class Fade : MonoBehaviour
     {
         _fadePanel.gameObject.SetActive(true);
 
-        //α値(透明度)を 0 -> 1 にする(少しずつ暗くする)
+        //α値(透明度)を 0 → 1 にする(少しずつ暗くする)
         float alpha = 0f;
         Color color = _fadePanel.color;
 

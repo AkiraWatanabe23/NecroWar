@@ -1,23 +1,15 @@
 ﻿using Data;
-using Data.Demo;
 using System;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
-
-#if UNITY_EDITOR
 using Debug = UnityEngine.Debug;
-#else
-using Debug = Constants.ConsoleLogs;
-#endif
 
 namespace Network
 {
+    /// <summary> サーバー接続を行うサンプルクラス </summary>
     public class ServerConnector : SingletonMonoBehaviour<ServerConnector>
     {
-        [Tooltip("ブラウザ等にアップロードされているサーバーのURL")]
-        [SerializeField]
-        private string _masterServerURL = "";
         [Tooltip("保持しているデータ一覧")]
         [SerializeField]
         private UserDataHolder _userData = default;
@@ -44,6 +36,11 @@ namespace Network
         /// <summary> アクセスサーバーのリンク </summary>
         private string _serverURL = "";
 
+        /// <summary> 正常な処理が行われた場合にサーバーから返ってくる文字列 </summary>
+        private const string Success = "Request Success";
+        /// <summary> 何かしらリクエストに対する処理が失敗した時にサーバーから返ってくる文字列 </summary>
+        private const string Failed = "Request Failed";
+
         protected override bool DontDestroyOnLoad => true;
 
         private async void Start()
@@ -52,13 +49,7 @@ namespace Network
             _serverIPAddress = await bootstrap.SendServerAddressRequest();
 
             _serverURL = $"http://{_serverIPAddress}:{_port}/";
-
-            //初期アクセスに失敗した場合
-            if (_serverIPAddress == "" && IsValidURL(_masterServerURL))
-            {
-                _serverURL = _masterServerURL;
-            }
-            if (_serverURL == "") { Debug.LogError("適切なURLが取得されませんでした"); ApplicationClose(); }
+            if (!IsValidURL(_serverURL)) { Debug.LogError("適切なURLが取得されませんでした"); ApplicationClose(false); }
 
             _connectorModel.Initialize(_serverURL);
 
@@ -97,8 +88,7 @@ namespace Network
                     else
                     {
                         Debug.Log("Get Data");
-                        _userData.OnUpdateDataInfo(
-                            JsonUtility.FromJson<DemoData>(await PutRequest("GetUserData", _userData.ID, _targetClassName)));
+                        _userData.OnUpdateDataInfo(_targetClassName, await PutRequest("GetUserData", _userData.ID, _targetClassName));
                         _connectorView.OnUpdateIDText(_userData.ID);
                     }
                 }
@@ -121,20 +111,15 @@ namespace Network
 
             _connectorView.GetNameButton.onClick.AddListener(async () => await PostRequest("GetName", _userData.ID));
             _connectorView.GetScoreButton.onClick.AddListener(async () => await PostRequest("GetScore", _userData.ID));
+            //サンプルとして1～5位のランキングを取得
+            _connectorView.GetRankingButton.onClick.AddListener(async () => await PutRequest("GetRanking", _userData.ID, "1", "5"));
             _connectorView.CloseButton.onClick.AddListener(async () =>
             {
-                if (!_userData.IsDataSaveOnClosed())
+                bool isDeleteID = !_userData.IsDataSaveOnClosed();
+                if (isDeleteID && await PostRequest("DeleteUserData", _userData.ID) == Success ||
+                    !isDeleteID && await PostRequest("CloseClient", _userData.ID) == Success)
                 {
-                    Debug.Log(_userData.ID);
-                    if (await PostRequest("DeleteUserData", _userData.ID) == "Success")
-                    {
-                        ApplicationClose();
-                    }
-                }
-                else
-                {
-                    var request = await PostRequest("CloseClient", _userData.ID);
-                    if (request == "Success") { ApplicationClose(); }
+                    ApplicationClose(isDeleteID);
                 }
             });
         }
@@ -162,18 +147,18 @@ namespace Network
             return requestData;
         }
 
-        private async Task<string> PutRequest(string requestMessage, params string[] sendData)
+        private async Task<string> PutRequest(string requestMessage, string id, params string[] parameters)
         {
-            var requestData = await _connectorModel.SendPutRequest(string.Join(",", sendData), requestMessage);
+            var requestData = await _connectorModel.SendPutRequest($"{id},{string.Join(",", parameters)}", requestMessage);
 
             _connectorView.OnUpdateAccessResultText(requestData);
             return requestData;
         }
 
-        private void ApplicationClose()
+        private void ApplicationClose(bool deleteKey)
         {
             _isRequestClosed = true;
-            _userData.DeleteID();
+            if (deleteKey) { _userData.DeleteID(); }
 #if UNITY_EDITOR
             EditorApplication.isPlaying = false;
 #else
@@ -183,10 +168,10 @@ namespace Network
 
         private async void OnDisable()
         {
-            if (_isRequestClosed) { return; }
+            if (_isRequestClosed || !_isConnected) { return; }
 
             var closeRequest = await PostRequest("CloseClient", _userData.ID);
-            if (closeRequest == "Success") { ApplicationClose(); }
+            if (closeRequest == Success) { ApplicationClose(false); }
         }
 
         private void OnDestroy() => _connectorModel.OnDestroy();
