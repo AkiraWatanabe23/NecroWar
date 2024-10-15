@@ -12,10 +12,13 @@ using Debug = Constants.EditorDebug;
 /// <summary> ゲーム内のサウンド管理クラス </summary>
 public class AudioManager
 {
+    private static bool _isUseMainSource = false;
     /// <summary> Audio再生するClipを統括する親オブジェクト </summary>
     private static GameObject _audioObject = default;
-    /// <summary> BGM用のSource（基本的に1シーン当たり1BGMなので単一のインスタンス） </summary>
-    private static AudioSource _bgmSource = default;
+    /// <summary> BGM用のSource（基本的に1シーンあたり1BGMなので単一のインスタンス） </summary>
+    private static AudioSource _mainBGMSource = default;
+    /// <summary> BGM用のSource（BGMのクロスフェードを行う際、1つだとできないため） </summary>
+    private static AudioSource _subBGMSource = default;
     /// <summary> SE用のSource（SEはたくさん流れるのでList） </summary>
     private static List<AudioSource> _seSources = default;
 
@@ -25,7 +28,11 @@ public class AudioManager
 
     private readonly Queue<AudioClip> _seQueue = new();
 
-    public AudioSource BGMSource => _bgmSource;
+    /// <summary> このクラス内で参照するBGMAudioSource </summary>
+    protected AudioSource Source => _isUseMainSource ? _mainBGMSource : _subBGMSource;
+
+    //外部のクラスで参照するBGMAudioSource
+    public AudioSource BGMSource => _isUseMainSource ? _mainBGMSource : _subBGMSource;
     public List<AudioSource> SeSource => _seSources;
 
     public static AudioManager Instance
@@ -45,8 +52,9 @@ public class AudioManager
         _instance = new();
 
         var bgm = new GameObject("BGM");
-        _bgmSource = bgm.AddComponent<AudioSource>();
+        _mainBGMSource = bgm.AddComponent<AudioSource>();
         bgm.transform.parent = _audioObject.transform;
+        _isUseMainSource = true;
 
         var se = new GameObject("SE");
         _seSources = new() { se.AddComponent<AudioSource>() };
@@ -56,7 +64,7 @@ public class AudioManager
         _soundHolder = Resources.Load<AudioHolder>("AudioHolder");
 
         //初期音量設定（データ引き継ぎ等に対応する必要有）
-        _bgmSource.volume = 1f;
+        _mainBGMSource.volume = 1f;
         _seSources[0].volume = 1f;
 
         Object.DontDestroyOnLoad(_audioObject);
@@ -75,11 +83,11 @@ public class AudioManager
         }
         if (index >= _soundHolder.BGMClips.Length) { Debug.LogError("指定したBGMが見つかりませんでした"); return; }
 
-        _bgmSource.Stop();
+        Source.Stop();
 
-        _bgmSource.loop = isLoop;
-        _bgmSource.clip = _soundHolder.BGMClips[index].BGMClip;
-        _bgmSource.Play();
+        Source.loop = isLoop;
+        Source.clip = _soundHolder.BGMClips[index].BGMClip;
+        Source.Play();
     }
 
     /// <summary> SE再生 </summary>
@@ -113,7 +121,7 @@ public class AudioManager
     }
 
     /// <summary> BGMの再生を止める </summary>
-    public void StopBGM() => _bgmSource.Stop();
+    public void StopBGM() => Source.Stop();
 
     /// <summary> SEの再生を止める </summary>
     public void StopSE()
@@ -138,12 +146,12 @@ public class AudioManager
     /// <summary> BGMの再生終了待機 </summary>
     public IEnumerator BGMPlayingWait()
     {
-        yield return new WaitUntil(() => !_bgmSource.isPlaying);
+        yield return new WaitUntil(() => !Source.isPlaying);
     }
 
     public async Task BGMPlaying()
     {
-        while (_bgmSource.isPlaying) { await Task.Yield(); }
+        while (Source.isPlaying) { await Task.Yield(); }
     }
 
     /// <summary> SEの再生終了待機 </summary>
@@ -163,14 +171,88 @@ public class AudioManager
         }
     }
 
+    /// <summary> BGM用のAudioSourceを変更する </summary>
+    /// <param name="clip"> 新しく再生する音源（指定があれば設定する） </param>
+    public void ChangeBGMSource(AudioClip clip = null)
+    {
+        _isUseMainSource = !_isUseMainSource;
+        if (clip != null) { Source.clip = clip; }
+    }
+
     #region 以下Audio系パラメーター設定用の関数
     /// <summary> BGMの音量設定 </summary>
-    public void VolumeSettingBGM(float value) => _bgmSource.volume = value;
+    public void VolumeSettingBGM(float value)
+    {
+        if (Source == null) { return; }
+
+        Source.volume = value;
+    }
 
     /// <summary> SEの音量設定 </summary>
     public void VolumeSettingSE(float value)
     {
+        if (_seSources == null || _seSources.Count <= 0) { return; }
+
         foreach (var source in _seSources) { source.volume = value; }
     }
     #endregion
 }
+
+#region Audio Extension
+public static class AudioExtensions
+{
+    private static bool _isFadePlaying = false;
+
+    /// <summary> 音量を徐々に変更する </summary>
+    /// <param name="source"> 対象のAudioSource </param>
+    /// <param name="endVolume"> 最終的な音量 </param>
+    /// <param name="duration"> 実行時間 </param>
+    public static async void DOFade(this AudioSource source, float endVolume, float duration)
+    {
+        await AudioFadeAsync(source, endVolume, duration);
+    }
+
+    private static async Task AudioFadeAsync(AudioSource source, float endVolume, float duration)
+    {
+        if (_isFadePlaying) { Debug.Log("AudioFade Playing..."); return; }
+
+        _isFadePlaying = true;
+        var currentVolume = source.volume;
+        if ((int)currentVolume == (int)endVolume) { return; }
+
+        float timer = 0f;
+        while (timer <= duration)
+        {
+            timer += Time.deltaTime;
+            source.volume = Mathf.Lerp(currentVolume, endVolume, timer / duration);
+
+            await Task.Yield();
+        }
+
+        source.volume = endVolume;
+        _isFadePlaying = false;
+    }
+
+    /// <summary> 音源のクロスフェード </summary>
+    /// <param name="source"> 対象のAudioSource </param>
+    /// <param name="next"> 次に再生する音源 </param>
+    /// <param name="duration"> 実行時間 </param>
+    public static async void CrossFade(this AudioSource source, AudioClip next, float duration)
+    {
+        await CrossFadeAsync(source, next, duration);
+    }
+
+    private static async Task CrossFadeAsync(AudioSource source, AudioClip next, float duration)
+    {
+        var targetVolume = source.volume;
+        var endVolume = 0f;
+
+        var fadeOut = Task.Run(() => AudioFadeAsync(source, endVolume, duration));
+        AudioManager.Instance.ChangeBGMSource(next);
+        var fadeIn = Task.Run(() => AudioFadeAsync(AudioManager.Instance.BGMSource, targetVolume, duration));
+
+        //複数のTaskを並列実行し、全てが終了するまで待機する
+        await Task.WhenAll(fadeOut, fadeIn);
+    }
+}
+#endregion
